@@ -39,14 +39,14 @@ void mono_set_assemblies_path (const char* path);
 
 int main (int argc, char *argv[])
 {
-	printf ("hello world 2\n");
+	// printf ("hello world 2\n");
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_LLVMONLY);
 	mono_set_assemblies_path ("managed");
 	MonoDomain *domain = mono_jit_init_version ("hello", "v4.0.30319");
-	printf ("INIT DONE! domain %p\n", domain);
+	// printf ("INIT DONE! domain %p\n", domain);
 
     MonoAssembly *assembly = mono_assembly_open ("managed/hello.exe", NULL);
-	printf ("main asm loaded %p!\n", assembly);
+	// printf ("main asm loaded %p!\n", assembly);
     mono_jit_exec (domain, assembly, argc, argv);
 
 	return 0;
