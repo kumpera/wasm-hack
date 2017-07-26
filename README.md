@@ -3,6 +3,16 @@ This repo is a collection of hacks I'm using to work on wasm, take with a huge g
 
 # Setup
 
+## Checkout layout:
+
+I have:
+wasm/
+	emsdk
+	mono
+	wasm-hack
+
+You want to have a normal mono around to source you a bcl to stuff into wasm-hack/managed
+
 1) Build emscripten as webassembly.org suggests. http://webassembly.org/getting-started/developers-guide/
 
 2) Use this mono fork/branch: https://github.com/kumpera/mono/tree/wasm-port
@@ -38,7 +48,7 @@ Plus, shell files are great for the dirty hack vibe.
 8) Fire the webserver and check it out on a recent chrome
 
 ```
-emrun --no_browser --port 8080 .
+emrun --no_browser --port 8080 --no_emrun_detect .
 ```
 http://localhost:8080/driver.html
 ```
