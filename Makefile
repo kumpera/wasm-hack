@@ -52,7 +52,7 @@ managed/mini_tests.dll: $(MINI_TEST_SOURCES) mini-test-runner.cs $(BCL_FILES) $(
 	mcs /nostdlib /unsafe -target:library -out:managed/mini_tests.dll -define:__MOBILE__ $(MINI_TEST_DEPS) $(MINI_TEST_SOURCES) mini-test-runner.cs 
 
 mono.js: driver.o libmonosgen-2.0.a
-	$(EMCC) -g -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1  -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0 driver.o x/*o -o mono.js
+	$(EMCC) -g -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s "BINARYEN_TRAP_MODE='clamp'" -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0 driver.o x/*o -o mono.js
 
 run: mono.js managed/hello.exe managed/mini_tests.dll managed/nunitlite.dll
 	@$(D8) --expose_wasm test.js
