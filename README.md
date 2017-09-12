@@ -1,3 +1,5 @@
+-s ALIASING_FUNCTION_POINTERS=0
+
 This repo is a collection of hacks I'm using to work on wasm, take with a huge grain of salt.
 
 
@@ -25,15 +27,9 @@ source emsdk/emsdk_env.sh
 4) Build mono with this configure enchantment:
 
 ```
-RANLIB=emranlib AR=emar CC=emcc CFLAGS="-s WASM=1 -DWASM -Os" ././autogen.sh --build=i386-apple-darwin10  --host=i686-linux --enable-minimal=jit --enable-interpreter --disable-mcs-build --disable-nls --disable-boehm  --disable-btls --with-lazy-gc-thread-creation=yes --with-libgc=none --disable-executables --disable-visibility-hidden
+CFLAGS="-Os -g" PATH=/usr/local/Cellar/libtool/2.4.6_1/bin/:$PATH RANLIB=emranlib AR=emar CXX=emcc CC=emcc ./autogen.sh --enable-wasm --enable-interpreter --disable-mcs-build --disable-nls --disable-boehm  --disable-btls --with-lazy-gc-thread-creation=yes --with-libgc=none --disable-executables --disable-visibility-hidden --enable-wasm --enable-minimal=ssa,com,jit,reflection_emit_save,reflection_emit,portability,assembly_remapping,attach,verifier,full_messages,appdomains,security,sgen_remset,sgen_marksweep_par,sgen_marksweep_fixed,sgen_marksweep_fixed_par,sgen_copying,logging,remoting,shared_perfcounters --host=i386-apple-darwin10
 ```
 
-5) Edit eglib-config.h and remove the asm block from G_BREAKPOINT
-
-I have it like this locally:
-```
-#define G_BREAKPOINT()           G_STMT_START { printf ("HALP\n"); abort (); } G_STMT_END
-```
 
 6) Build mono
 ```
