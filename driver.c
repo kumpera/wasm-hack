@@ -66,7 +66,8 @@ load_runtime (void)
 {
 	char *argv[1] = { "hello.exe" };
 
-	// monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 1);
+	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 1);
+	monoeg_g_setenv ("MONO_LOG_MASK", "gc", 1);
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_LLVMONLY);
 	mono_set_assemblies_path ("managed");
 	MonoDomain *domain = mono_jit_init_version ("hello", "v4.0.30319");

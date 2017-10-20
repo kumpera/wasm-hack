@@ -16,7 +16,18 @@ MINI_TEST_FILES= \
     exceptions.cs   \
     generics.cs     \
     gshared.cs      \
-    objects.cs
+    objects.cs	\
+	builtin-types.cs	\
+	devirtualization.cs	\
+	mixed.cs	\
+	gc-test.cs
+
+
+#baisc-vectors requires System.Numerics.Vector
+#unaligned requires MemoryIntrinsics
+REQUIRE_MORE_LIBS =	\
+	basic-vectors.cs	\
+	unaligned.cs	\
 
 BCL_ASSEMBLIES= \
         mscorlib.dll    \
@@ -49,11 +60,20 @@ managed/hello.exe: hello.cs
 	mcs hello.cs -r:managed/nunitlite.dll -out:managed/hello.exe
 
 managed/mini_tests.dll: $(MINI_TEST_SOURCES) mini-test-runner.cs $(BCL_FILES) $(DEPS_FILES)
-	mcs /nostdlib /unsafe -target:library -out:managed/mini_tests.dll -define:__MOBILE__ $(MINI_TEST_DEPS) $(MINI_TEST_SOURCES) mini-test-runner.cs 
+	mcs /nostdlib /unsafe -target:library -out:managed/mini_tests.dll -define:__MOBILE__,ARCH_32 $(MINI_TEST_DEPS) $(MINI_TEST_SOURCES) mini-test-runner.cs 
 
 mono.js: driver.o libmonosgen-2.0.a
-	$(EMCC) -g -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s "BINARYEN_TRAP_MODE='clamp'" -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0 driver.o x/*o -o mono.js
+	$(EMCC) -g4 -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s "BINARYEN_TRAP_MODE='clamp'" -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0 -s ASSERTIONS=1 driver.o x/*o -o mono.js
+
+# $(EMCC) -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s "BINARYEN_TRAP_MODE='clamp'" -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0 driver.o x/*o -o mono.js
+
 
 run: mono.js managed/hello.exe managed/mini_tests.dll managed/nunitlite.dll
 	@$(D8) --expose_wasm test.js
 
+
+reg-run: regression.js foo.dll.wasm
+	(cd ../mono-aot/mono/mini/; mcs /unsafe /target:library foo.cs)
+	(cd ../mono-aot/mono/mini/; MONO_PATH=~/src/mono/mcs/class/lib/net_4_x  ./mono-sgen --aot=full foo.dll)
+	cp ../mono-aot/mono/mini/foo.dll.wasm .
+	@$(D8) --expose_wasm regression.js

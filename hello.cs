@@ -11,25 +11,39 @@ public class MyRunner : TextUI, ITestListener
 {
 	public String failed_tests = "";
 
-    public void TestFinished(ITestResult result)
-	{
-		if (result.ResultState.Status == TestStatus.Failed) {
-			if (failed_tests.Length > 0)
-				failed_tests += ", ";
-			failed_tests += result.Test.Name;
-		}
-		base.TestFinished (result);
-	}
+	//     public void TestFinished(ITestResult result)
+	// {
+	// 	if (result.ResultState.Status == TestStatus.Failed) {
+	// 		if (failed_tests.Length > 0)
+	// 			failed_tests += ", ";
+	// 		failed_tests += result.Test.Name;
+	// 	}
+	// 	base.TestFinished (result);
+	// }
 }
 
 public class Driver {
 	static void Main () {
 		Console.WriteLine ("hello");
+		Send ("run", "mini");
 	}
 
+	static int run_count;
 	public static string Send (string key, string val) {
-		StartTest ("mini");
+		if (key != "run")
+			return "INVALID-ARG";
+		if (val == "gc") { 
+			Console.WriteLine ("running {0} step", run_count);
+			for (int i = 0; i < 1000 * 2; ++i) {
+				var x = new object [1000];
+			}
+			++run_count;
+			return run_count >= 10 ? "DONE" :  "IN PROGRESS";
+		}
+		StartTest (val);
 		return "SUCCESS";
+
+		return "FAIL";
 	}
 
 	public class TestSuite {

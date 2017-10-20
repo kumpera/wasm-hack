@@ -53,9 +53,22 @@ http://localhost:8080/driver.html
 
 Odds are that you'll end up with some random garbage in your setup.
 
+## Building the cross compiler
+
+PATH=/usr/local/Cellar/libtool/2.4.6_1/bin/:$PATH ./autogen.sh --enable-wasm-target --host=i386-apple-darwin10
+
+
+### Testing  the cross compiler
+
+
+
+
 
 # TODO
 	fix autoconf detection of wasm target
 	add atomic.h intrinsics
 	DWARF_DATA_ALIGN is zero
 	Fix eglib-config.h
+
+Broken tests:
+	test_0_simple_double_casts failed: got 1, expected 0

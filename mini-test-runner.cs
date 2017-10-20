@@ -4,9 +4,11 @@ using System.Linq;
 
 using NUnit.Framework;
 
+
+
 [TestFixture]
 public class JitTests {
-	static string[] args = new string[] { "--verbose", "--exclude", "!FULLAOT", "--exclude", "!WASM" };
+	static string[] args = new string[] { "--verbose", "--exclude", "!FULLAOT", "--exclude", "!WASM", "--exclude", "!INTERPRETER"};
 
 	[Test]
 	public static void Basic () {
@@ -69,6 +71,30 @@ public class JitTests {
 	[Test]
 	public static void Aot () {
 		int res = TestDriver.RunTests (typeof (AotTests), args);
+		Assert.AreEqual (0, res);
+	}
+
+	[Test]
+	public static void BuiltinTests () {
+		int res = TestDriver.RunTests (typeof (BuiltinTests), args);
+		Assert.AreEqual (0, res);
+	}
+
+	[Test]
+	public static void DevirtualizationTests () {
+		int res = TestDriver.RunTests (typeof (DevirtualizationTests), args);
+		Assert.AreEqual (0, res);
+	}
+
+	[Test]
+	public static void MixedTests () {
+		int res = TestDriver.RunTests (typeof (MixedTests), args);
+		Assert.AreEqual (0, res);
+	}
+
+	[Test]
+	public static void GcTests () {
+		int res = TestDriver.RunTests (typeof (GcTests), args);
 		Assert.AreEqual (0, res);
 	}
 }
