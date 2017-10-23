@@ -10,16 +10,6 @@ using NUnit.Framework.Api;
 public class MyRunner : TextUI, ITestListener
 {
 	public String failed_tests = "";
-
-	//     public void TestFinished(ITestResult result)
-	// {
-	// 	if (result.ResultState.Status == TestStatus.Failed) {
-	// 		if (failed_tests.Length > 0)
-	// 			failed_tests += ", ";
-	// 		failed_tests += result.Test.Name;
-	// 	}
-	// 	base.TestFinished (result);
-	// }
 }
 
 public class Driver {
@@ -83,7 +73,6 @@ public class Driver {
 		if (test_name != null)
 			arg_list.Add ("-test=" + test_name);
 
-		// arg_list.Add ("-exclude=WASM,NotWorking,ValueAdd,CAS,InetAccess," + extra_disable);
 		arg_list.Add ("-exclude=WASM,NotWorking,ValueAdd,CAS,InetAccess");
 		arg_list.Add (baseDir + "/" + testsuite_name);
 

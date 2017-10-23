@@ -77,3 +77,20 @@ reg-run: regression.js foo.dll.wasm
 	(cd ../mono-aot/mono/mini/; MONO_PATH=~/src/mono/mcs/class/lib/net_4_x  ./mono-sgen --aot=full foo.dll)
 	cp ../mono-aot/mono/mini/foo.dll.wasm .
 	@$(D8) --expose_wasm regression.js
+
+
+.PHONY: dist
+
+dist: mono.js
+	rm -rf dist
+	mkdir dist
+	mkdir dist/bcl
+	cp mono.* dist
+	cp ../bcl/mscorlib.dll dist/bcl
+	cp ../bcl/System.dll dist/bcl
+	cp ../bcl/System.Core.dll dist/bcl
+	cp -r ../bcl/Facades dist/bcl/
+	cp driver.c dist/
+	cp dist-README.md dist/README.md
+	cp libmonosgen-2.0.a dist/
+	cp test.js dist/

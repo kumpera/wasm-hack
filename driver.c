@@ -1,5 +1,8 @@
 #include <emscripten.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 
 typedef enum {
 	/* Disables AOT mode */
@@ -27,8 +30,6 @@ typedef enum {
 	MONO_IMAGE_IMAGE_INVALID
 } MonoImageOpenStatus;
 
-
-
 typedef struct MonoDomain_ MonoDomain;
 typedef struct MonoAssembly_ MonoAssembly;
 typedef struct MonoMethod_ MonoMethod;
@@ -38,12 +39,12 @@ typedef struct MonoClass_ MonoClass;
 typedef struct MonoImage_ MonoImage;
 typedef struct MonoObject_ MonoObject;
 typedef struct MonoThread_ MonoThread;
-
+typedef struct _MonoAssemblyName MonoAssemblyName;
 
 
 void mono_jit_set_aot_mode (MonoAotMode mode);
-MonoDomain *  mono_jit_init_version (const char *root_domain_name, const char *runtime_version);
-MonoAssembly *mono_assembly_open (const char *filename, MonoImageOpenStatus *status);
+MonoDomain*  mono_jit_init_version (const char *root_domain_name, const char *runtime_version);
+MonoAssembly* mono_assembly_open (const char *filename, MonoImageOpenStatus *status);
 int mono_jit_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[]);
 void mono_set_assemblies_path (const char* path);
 int monoeg_g_setenv(const char *variable, const char *value, int overwrite);
@@ -57,56 +58,87 @@ MonoString* mono_object_to_string (MonoObject *obj, MonoObject **exc);
 char* mono_string_to_utf8 (MonoString *string_obj);
 MonoObject* mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 MonoImage* mono_assembly_get_image (MonoAssembly *assembly);
+MonoAssembly* mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status);
+
+MonoAssemblyName* mono_assembly_name_new (const char *name);
+void mono_assembly_name_free (MonoAssemblyName *aname);
+const char* mono_image_get_name (MonoImage *image);
+const char* mono_class_get_name (MonoClass *klass);
+MonoString* mono_string_new (MonoDomain *domain, const char *text);
 
 
-static MonoAssembly *main_assembly;
-
-EMSCRIPTEN_KEEPALIVE int
-load_runtime (void)
+static char*
+m_strdup (const char *str)
 {
-	char *argv[1] = { "hello.exe" };
+	if (!str)
+		return NULL;
 
+	int len = strlen (str) + 1;
+	char *res = malloc (len);
+	memcpy (res, str, len);
+	return res;
+}
+
+static MonoDomain *root_domain;
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_load_runtime (const char *managed_path)
+{
 	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 1);
 	monoeg_g_setenv ("MONO_LOG_MASK", "gc", 1);
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_LLVMONLY);
-	mono_set_assemblies_path ("managed");
-	MonoDomain *domain = mono_jit_init_version ("hello", "v4.0.30319");
-    main_assembly = mono_assembly_open ("managed/hello.exe", NULL);
-
-	return 0;
+	mono_set_assemblies_path (m_strdup (managed_path));
+	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
 }
 
-static MonoMethod *send_method;
-static char *last_str;
-
-EMSCRIPTEN_KEEPALIVE char*
-send_message (const char *key, const char *val)
+EMSCRIPTEN_KEEPALIVE MonoAssembly*
+mono_wasm_assembly_load (const char *name)
 {
-	if (last_str)
-		mono_free (last_str);
-	last_str = NULL;
+	MonoImageOpenStatus status;
+	MonoAssemblyName* aname = mono_assembly_name_new (name);
+	if (!name)
+		return NULL;
 
-	void * params[] = {
-		mono_string_new (mono_domain_get (), key),
-		mono_string_new (mono_domain_get (), val),
-	};
+	MonoAssembly *res = mono_assembly_load (aname, NULL, &status);
+	mono_assembly_name_free (aname);
 
-	if (!send_method) {
-		MonoClass *driver_class = mono_class_from_name (mono_assembly_get_image (main_assembly), "", "Driver");
-		send_method = mono_class_get_method_from_name (driver_class, "Send", -1);
-	}
+	return res;
+}
 
+EMSCRIPTEN_KEEPALIVE MonoClass*
+mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, const char *name)
+{
+	return mono_class_from_name (mono_assembly_get_image (assembly), namespace, name);
+}
+
+EMSCRIPTEN_KEEPALIVE MonoMethod*
+mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
+{
+	return mono_class_get_method_from_name (klass, name, arguments);
+}
+
+EMSCRIPTEN_KEEPALIVE MonoObject*
+mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[])
+{
 	MonoException *exc = NULL;
-	MonoString *res = (MonoString *)mono_runtime_invoke (send_method, NULL, params, (MonoObject**)&exc);
+	MonoObject *res = (MonoObject *)mono_runtime_invoke (method, this_arg, params, (MonoObject**)&exc);
 	if (exc) {
-		MonoException *second_exc = NULL;
-		res = mono_object_to_string ((MonoObject*)exc, (MonoObject**)&second_exc);
-		if (second_exc)
-			res = mono_string_new (mono_domain_get (), "DOUBLE FAULTED EXCEPTION");
+		printf ("NO EH for mono_wasm_invoke_method\n");
+		abort ();
 	}
 
-	if (res)
-		last_str = mono_string_to_utf8 (res);
+	return res;
+}
 
-	return last_str;
+EMSCRIPTEN_KEEPALIVE char *
+mono_wasm_string_to_js (MonoString *str)
+{
+	//FIXME this leaks
+	return mono_string_to_utf8 (str);
+}
+
+EMSCRIPTEN_KEEPALIVE MonoString *
+mono_wasm_string_from_js (const char *str)
+{
+	return mono_string_new (root_domain, str);
 }
