@@ -6,6 +6,8 @@ using System.Reflection;
 using NUnitLite.Runner;
 using NUnit.Framework.Internal;
 using NUnit.Framework.Api;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 public class MyRunner : TextUI, ITestListener
 {
@@ -13,6 +15,10 @@ public class MyRunner : TextUI, ITestListener
 }
 
 public class Driver {
+    [MethodImplAttribute (MethodImplOptions.InternalCall)]
+    public static extern int AddJS (int a, int b);
+
+
 	static void Main () {
 		Console.WriteLine ("hello");
 		Send ("run", "mini");
@@ -20,6 +26,9 @@ public class Driver {
 
 	static int run_count;
 	public static string Send (string key, string val) {
+		if (key == "say" && val == "hello")
+			return "JS-ADD got us " + AddJS (1, 2);
+
 		if (key != "run")
 			return "INVALID-ARG";
 		if (val == "gc") { 
@@ -46,7 +55,6 @@ public class Driver {
 		new TestSuite () { Name = "corlib", File = "monodroid_corlib_test.dll" },
 		new TestSuite () { Name = "system", File = "monodroid_System_test.dll" },
 	};
-
 
 	public static void StartTest (string name) {
 		var baseDir = AppDomain.CurrentDomain.BaseDirectory;

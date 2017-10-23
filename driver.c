@@ -65,6 +65,7 @@ void mono_assembly_name_free (MonoAssemblyName *aname);
 const char* mono_image_get_name (MonoImage *image);
 const char* mono_class_get_name (MonoClass *klass);
 MonoString* mono_string_new (MonoDomain *domain, const char *text);
+void mono_add_internal_call (const char *name, const void* method);
 
 
 static char*
@@ -81,6 +82,9 @@ m_strdup (const char *str)
 
 static MonoDomain *root_domain;
 
+
+extern int AddJS (int a, int b);
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *managed_path)
 {
@@ -89,6 +93,9 @@ mono_wasm_load_runtime (const char *managed_path)
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_LLVMONLY);
 	mono_set_assemblies_path (m_strdup (managed_path));
 	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
+
+
+	mono_add_internal_call ("Driver::AddJS", AddJS);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoAssembly*

@@ -56,8 +56,8 @@ driver.o: driver.c
 managed/nunitlite.dll: /Users/kumpera/src/mono/mcs/class/lib/net_4_x-darwin/nunitlite.dll
 	cp /Users/kumpera/src/mono/mcs/class/lib/net_4_x-darwin/nunitlite.dll managed/nunitlite.dll
 
-managed/hello.exe: hello.cs
-	mcs hello.cs -r:managed/nunitlite.dll -out:managed/hello.exe
+managed/main.exe: main.cs
+	mcs main.cs -r:managed/nunitlite.dll -out:managed/main.exe
 
 managed/mini_tests.dll: $(MINI_TEST_SOURCES) mini-test-runner.cs $(BCL_FILES) $(DEPS_FILES)
 	mcs /nostdlib /unsafe -target:library -out:managed/mini_tests.dll -define:__MOBILE__,ARCH_32 $(MINI_TEST_DEPS) $(MINI_TEST_SOURCES) mini-test-runner.cs 
@@ -68,7 +68,7 @@ mono.js: driver.o libmonosgen-2.0.a
 # $(EMCC) -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s "BINARYEN_TRAP_MODE='clamp'" -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0 driver.o x/*o -o mono.js
 
 
-run: mono.js managed/hello.exe managed/mini_tests.dll managed/nunitlite.dll
+run: mono.js managed/main.exe managed/mini_tests.dll managed/nunitlite.dll
 	@$(D8) --expose_wasm test.js
 
 
@@ -83,9 +83,11 @@ reg-run: regression.js foo.dll.wasm
 
 dist: mono.js
 	rm -rf dist
+	rm -f dist.zip
 	mkdir dist
 	mkdir dist/bcl
-	cp mono.* dist
+	cp mono.wasm dist
+	cp mono.js dist
 	cp ../bcl/mscorlib.dll dist/bcl
 	cp ../bcl/System.dll dist/bcl
 	cp ../bcl/System.Core.dll dist/bcl
@@ -94,3 +96,5 @@ dist: mono.js
 	cp dist-README.md dist/README.md
 	cp libmonosgen-2.0.a dist/
 	cp test.js dist/
+	cp main.cs dist/
+	zip -r9 dist.zip dist
