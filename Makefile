@@ -97,7 +97,7 @@ dist: mono.js
 	cp libmonosgen-2.0.a dist/
 	cp test.js dist/
 	cp main.cs dist/
-	cp library_mono.cs dist/
+	cp library_mono.js dist/
 	zip -r9 dist.zip dist
 
 
