@@ -9,7 +9,7 @@
 
 Right now mono is compiled using the following emcc incantantion:
 ```
-emcc -g4 -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s "BINARYEN_TRAP_MODE='clamp'" -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0  driver.o libmonosgen_ar_expanded/*o -o mono.js
+emcc -g4 -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s "BINARYEN_TRAP_MODE='clamp'" -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0 --js-library library_mono.js driver.o libmonosgen_ar_expanded/*o -o mono.js
 ```
 
 The libmonosgen_ar_expanded directory is simply the contents libmonosgen-2.0.a expanded. You can do it with `ar -x`. Newer versions of emcc might properly support archive files and this no longer being necessary.
@@ -30,3 +30,14 @@ is by forcing each one to be wrapped/expoerted by the embedder as needed.
 There are multiple ways to do so. Right now there's no provision to go straight from C# to JS without writing some C glue in driver.c. That allows for high perf interop and we should later investigate a more straightforward facility that bridges through a single function and requires no C changes.
 
 The example is the AddJS function and the 3 parts can be seen in main.cs, driver.c and test.js.
+
+# Release notes
+
+## v1
+
+Added WebAssembly.Runtime::InvokeJS method that evals a string and returns its value.
+Moved the required JS code by mono to an emscripten js-library to further simplify deployment.
+
+## v0
+
+Initial code drop.
