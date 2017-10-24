@@ -62,8 +62,8 @@ managed/main.exe: main.cs
 managed/mini_tests.dll: $(MINI_TEST_SOURCES) mini-test-runner.cs $(BCL_FILES) $(DEPS_FILES)
 	mcs /nostdlib /unsafe -target:library -out:managed/mini_tests.dll -define:__MOBILE__,ARCH_32 $(MINI_TEST_DEPS) $(MINI_TEST_SOURCES) mini-test-runner.cs 
 
-mono.js: driver.o libmonosgen-2.0.a
-	$(EMCC) -g4 -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s "BINARYEN_TRAP_MODE='clamp'" -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0 -s ASSERTIONS=1 driver.o x/*o -o mono.js
+mono.js: driver.o libmonosgen-2.0.a library_mono.js
+	$(EMCC) -g4 -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s "BINARYEN_TRAP_MODE='clamp'" -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0 -s ASSERTIONS=1 --js-library library_mono.js driver.o x/*o -o mono.js
 
 # $(EMCC) -Os -s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -s BINARYEN=1 -s "BINARYEN_TRAP_MODE='clamp'" -s TOTAL_MEMORY=134217728 -s ALIASING_FUNCTION_POINTERS=0 driver.o x/*o -o mono.js
 
@@ -97,4 +97,7 @@ dist: mono.js
 	cp libmonosgen-2.0.a dist/
 	cp test.js dist/
 	cp main.cs dist/
+	cp library_mono.cs dist/
 	zip -r9 dist.zip dist
+
+

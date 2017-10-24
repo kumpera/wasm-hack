@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -14,9 +15,14 @@ public class MyRunner : TextUI, ITestListener
 	public String failed_tests = "";
 }
 
+namespace WebAssembly {
+	public sealed class Runtime {
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		public static extern string InvokeJS (string str);
+	}
+}
+
 public class Driver {
-    [MethodImplAttribute (MethodImplOptions.InternalCall)]
-    public static extern int AddJS (int a, int b);
 
 
 	static void Main () {
@@ -27,7 +33,7 @@ public class Driver {
 	static int run_count;
 	public static string Send (string key, string val) {
 		if (key == "say" && val == "hello")
-			return "JS-ADD got us " + AddJS (1, 2);
+			return "JS-ADD got us " + WebAssembly.Runtime.InvokeJS ("1 + 2");
 
 		if (key != "run")
 			return "INVALID-ARG";

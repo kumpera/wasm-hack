@@ -66,7 +66,7 @@ const char* mono_image_get_name (MonoImage *image);
 const char* mono_class_get_name (MonoClass *klass);
 MonoString* mono_string_new (MonoDomain *domain, const char *text);
 void mono_add_internal_call (const char *name, const void* method);
-
+MonoString *mono_string_from_utf16 (char *data);
 
 static char*
 m_strdup (const char *str)
@@ -82,8 +82,33 @@ m_strdup (const char *str)
 
 static MonoDomain *root_domain;
 
+static MonoString*
+mono_wasm_invoke_js (MonoString *str)
+{
+	if (str == NULL)
+		return NULL;
 
-extern int AddJS (int a, int b);
+	char *native_val = mono_string_to_utf8 (str);
+	char *native_res = (char*)EM_ASM_INT ({
+		var str = Module.UTF8ToString ($0);
+		var res = eval (str);
+		if (res == null)
+			return null;
+		res = res.toString ();
+		var buff = Module._malloc((res.length + 1) * 2);
+		stringToUTF16 (res, buff, (res.length + 1) * 2);
+		return buff;
+	}, (int)native_val);
+
+	mono_free (native_val);
+
+	if (native_res == NULL)
+		return NULL;
+
+	MonoString *res = mono_string_from_utf16 (native_res);
+	free (native_res);
+	return res;
+}
 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *managed_path)
@@ -94,8 +119,7 @@ mono_wasm_load_runtime (const char *managed_path)
 	mono_set_assemblies_path (m_strdup (managed_path));
 	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
 
-
-	mono_add_internal_call ("Driver::AddJS", AddJS);
+	mono_add_internal_call ("WebAssembly.Runtime::InvokeJS", mono_wasm_invoke_js);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoAssembly*
