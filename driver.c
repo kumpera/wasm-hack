@@ -54,7 +54,7 @@ MonoDomain* mono_domain_get (void);
 MonoClass* mono_class_from_name (MonoImage *image, const char* name_space, const char *name);
 MonoMethod* mono_class_get_method_from_name (MonoClass *klass, const char *name, int param_count);
 
-MonoString* mono_object_to_string (MonoObject *obj, MonoObject **exc);
+MonoString* mono_object_to_string (MonoObject *obj, MonoObject **exc);//FIXME Use MonoError variant
 char* mono_string_to_utf8 (MonoString *string_obj);
 MonoObject* mono_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc);
 MonoImage* mono_assembly_get_image (MonoAssembly *assembly);
@@ -66,7 +66,9 @@ const char* mono_image_get_name (MonoImage *image);
 const char* mono_class_get_name (MonoClass *klass);
 MonoString* mono_string_new (MonoDomain *domain, const char *text);
 void mono_add_internal_call (const char *name, const void* method);
-MonoString *mono_string_from_utf16 (char *data);
+MonoString * mono_string_from_utf16 (char *data);
+MonoString* mono_string_new (MonoDomain *domain, const char *text);
+
 
 static char*
 m_strdup (const char *str)
@@ -157,23 +159,29 @@ mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int argument
 }
 
 EMSCRIPTEN_KEEPALIVE MonoObject*
-mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[])
+mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[], int* got_exception)
 {
-	MonoException *exc = NULL;
-	MonoObject *res = (MonoObject *)mono_runtime_invoke (method, this_arg, params, (MonoObject**)&exc);
+	MonoObject *exc = NULL;
+	MonoObject *res = mono_runtime_invoke (method, this_arg, params, &exc);
+	*got_exception = 0;
+
 	if (exc) {
-		printf ("NO EH for mono_wasm_invoke_method\n");
-		abort ();
+		*got_exception = 1;
+
+		MonoObject *exc2 = NULL;
+		res = (MonoObject*)mono_object_to_string (exc, &exc2); 
+		if (exc2)
+			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
+		return res;
 	}
 
 	return res;
 }
 
 EMSCRIPTEN_KEEPALIVE char *
-mono_wasm_string_to_js (MonoString *str)
+mono_wasm_string_get_utf8 (MonoString *str)
 {
-	//FIXME this leaks
-	return mono_string_to_utf8 (str);
+	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
 }
 
 EMSCRIPTEN_KEEPALIVE MonoString *

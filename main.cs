@@ -45,18 +45,18 @@ public class Driver {
 
 	static int run_count;
 	public static string Send (string key, string val) {
-		Console.WriteLine ("{0} :: {1}", key, val);
 		if (key == "say") {
 			if (val == "hello") {
-				var r = "OK:" + WebAssembly.Runtime.InvokeJS ("1 + 2");
-				Console.WriteLine (r);
-				return r;
-			} else {
+				return "OK:" + WebAssembly.Runtime.InvokeJS ("1 + 2");
+			} else if (val == "js-exception") {
 				try {
 					return "OK:" + WebAssembly.Runtime.InvokeJS ("throw 1");
 				} catch (WebAssembly.JSException e) {
+					Console.WriteLine (e.Message);
 					return "EH:" + e.Message;
 				}
+			} else if (val == "sharp-exception") {
+				throw new Exception ("error!");
 			}
 		}
 

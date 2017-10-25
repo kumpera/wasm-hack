@@ -56,19 +56,34 @@ var assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string'
 var find_class = Module.cwrap ('mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string'])
 var find_method = Module.cwrap ('mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number'])
 var invoke_method = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number'])
-var mono_string_get_utf8 = Module.cwrap ('mono_wasm_string_to_js', 'number', ['number'])
+var mono_string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'number', ['number'])
 var mono_string = Module.cwrap ('mono_wasm_string_from_js', 'number', ['string'])
+
+function SharpException (msg) {
+	this.msg = msg;
+}
 
 function call_method (method, this_arg, args) {
 	var stack = Module.Runtime.stackSave ();
 	var args_mem = Runtime.stackAlloc (args.length);
+	var eh_throw = Runtime.stackAlloc (4);
 	for (var i = 0; i < args.length; ++i)
 		Module.setValue (args_mem + i * 4, args [i], "i32");
-	var res = invoke_method (send_message, this_arg, args_mem); //TODO exception handling
+	Module.setValue (eh_throw, 0, "i32");
+
+	var res = invoke_method (send_message, this_arg, args_mem, eh_throw);
+
+	if (Module.getValue (eh_throw, "i32") != 0) {
+		Module.Runtime.stackRestore(stack);
+		throw new SharpException (conv_string (res)); //the convention is that invoke_method ToString () any outgoing exception
+	}
+
 	Module.Runtime.stackRestore(stack);
 	return res;
 }
 
+//FIXME this is wastefull, we could remove the temp malloc by going the UTF16 route
+//FIXME this is unsafe, cuz raw objects could be GC'd.
 function conv_string (mono_obj) {
 	if (mono_obj == 0)
 		return null;
@@ -112,10 +127,16 @@ res = conv_string (res);
 if (res != "OK:3")
 	throw 4;
 
-var res = call_method (send_message, null, [mono_string ("say"), mono_string ("blah")])
+var res = call_method (send_message, null, [mono_string ("say"), mono_string ("js-exception")])
 res = conv_string (res);
 if (res != "EH:1")
 	throw 5;
 
+try {
+	call_method (send_message, null, [mono_string ("say"), mono_string ("sharp-exception")])
+	print ("no exception??");
+	throw 6;
+} catch (e) {
+}
 
 
