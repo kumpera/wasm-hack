@@ -56,7 +56,7 @@ var assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string'
 var find_class = Module.cwrap ('mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string'])
 var find_method = Module.cwrap ('mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number'])
 var invoke_method = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number'])
-var mono_string_to_js = Module.cwrap ('mono_wasm_string_to_js', 'string', ['number'])
+var mono_string_get_utf8 = Module.cwrap ('mono_wasm_string_to_js', 'number', ['number'])
 var mono_string = Module.cwrap ('mono_wasm_string_from_js', 'number', ['string'])
 
 function call_method (method, this_arg, args) {
@@ -66,6 +66,16 @@ function call_method (method, this_arg, args) {
 		Module.setValue (args_mem + i * 4, args [i], "i32");
 	var res = invoke_method (send_message, this_arg, args_mem); //TODO exception handling
 	Module.Runtime.stackRestore(stack);
+	return res;
+}
+
+function conv_string (mono_obj) {
+	if (mono_obj == 0)
+		return null;
+	var raw = mono_string_get_utf8 (mono_obj);
+	var res = Module.UTF8ToString (raw);
+	Module._free (raw);
+
 	return res;
 }
 
@@ -88,7 +98,7 @@ var do_test = false;
 if (do_test) {
 	var res = call_method (send_message, null, [mono_string ("run"), mono_string ("mini")])
 	if (res)
-		print ("TEST RUN: " + mono_string_to_js (res))
+		print ("TEST RUN: " + conv_string (res))
 
 	do {
 		call_method (send_message, null, [mono_string ("run"), mono_string ("gc")])
@@ -98,10 +108,14 @@ if (do_test) {
 }
 
 var res = call_method (send_message, null, [mono_string ("say"), mono_string ("hello")])
-print (res);
+res = conv_string (res);
 if (res != "OK:3")
 	throw 4;
 
 var res = call_method (send_message, null, [mono_string ("say"), mono_string ("blah")])
-print (res)
+res = conv_string (res);
+if (res != "EH:1")
+	throw 5;
+
+
 

@@ -18,7 +18,20 @@ public class MyRunner : TextUI, ITestListener
 namespace WebAssembly {
 	public sealed class Runtime {
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		public static extern string InvokeJS (string str);
+		static extern string InvokeJS (string str, out int exceptional_result);
+
+		public static string InvokeJS (string str)
+		{
+			int exception = 0;
+			var res = InvokeJS (str, out exception);
+			if (exception != 0)
+				throw new JSException (res);
+			return res;
+		}
+	}
+
+	public class JSException : Exception {
+		public JSException (string msg) : base (msg) {}
 	}
 }
 
@@ -32,8 +45,20 @@ public class Driver {
 
 	static int run_count;
 	public static string Send (string key, string val) {
-		if (key == "say" && val == "hello")
-			return "JS-ADD got us " + WebAssembly.Runtime.InvokeJS ("1 + 2");
+		Console.WriteLine ("{0} :: {1}", key, val);
+		if (key == "say") {
+			if (val == "hello") {
+				var r = "OK:" + WebAssembly.Runtime.InvokeJS ("1 + 2");
+				Console.WriteLine (r);
+				return r;
+			} else {
+				try {
+					return "OK:" + WebAssembly.Runtime.InvokeJS ("throw 1");
+				} catch (WebAssembly.JSException e) {
+					return "EH:" + e.Message;
+				}
+			}
+		}
 
 		if (key != "run")
 			return "INVALID-ARG";

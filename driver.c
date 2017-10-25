@@ -83,22 +83,30 @@ m_strdup (const char *str)
 static MonoDomain *root_domain;
 
 static MonoString*
-mono_wasm_invoke_js (MonoString *str)
+mono_wasm_invoke_js (MonoString *str, int *is_exception)
 {
 	if (str == NULL)
 		return NULL;
 
 	char *native_val = mono_string_to_utf8 (str);
 	char *native_res = (char*)EM_ASM_INT ({
-		var str = Module.UTF8ToString ($0);
-		var res = eval (str);
-		if (res == null)
-			return null;
-		res = res.toString ();
+		var str = UTF8ToString ($0);
+		try {
+			var res = eval (str);
+			if (res === null)
+				return 0;
+			res = res.toString ();
+			setValue ($1, 0, "i32");
+		} catch (e) {
+			res = e.toString ();
+			setValue ($1, 1, "i32");
+			if (res === null)
+				res = "unknown exception";
+		}
 		var buff = Module._malloc((res.length + 1) * 2);
 		stringToUTF16 (res, buff, (res.length + 1) * 2);
 		return buff;
-	}, (int)native_val);
+	}, (int)native_val, is_exception);
 
 	mono_free (native_val);
 
